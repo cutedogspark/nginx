@@ -1,0 +1,89 @@
+FROM ubuntu:16.04
+
+MAINTAINER "Ming-Jui Chen"  <cutedogspark@gmail.com>
+
+WORKDIR     /tmp
+
+RUN      buildDeps="build-essential \
+                    software-properties-common \
+                    automake \
+                    cmake \
+                    make \
+                    curl \
+                    wget \
+                    supervisor \
+                    openssl \
+                    libtool \
+                    libpcre3 \
+                    libpcre3-dev \
+                    libssl-dev \
+                    libxml2 \
+                    libxml2-dev \
+                    libxslt1-dev \
+                    libssl-dev \
+                    zlib1g-dev " && \
+                    export MAKEFLAGS="-j$(($(nproc) + 1))" && \
+                    DEBIAN_FRONTEND=noninteractive \
+                    apt-get -yqq update && \
+                    apt-get install -yq --no-install-recommends ${buildDeps} ca-certificates
+
+ENV         NGINX_VERSION=1.11.4 \
+            NGINX_RTMP_MODULE_VERSION=0.1.0-qeek \
+            NGINX_ECHO_MODULE_VERSION=0.60 
+
+# Nginx
+RUN wget -O nginx-${NGINX_VERSION}.tar.gz https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz && \
+    tar -zxf nginx-${NGINX_VERSION}.tar.gz && \
+
+# Nginx RTMP module
+    wget -O nginx-rtmp-module-${NGINX_RTMP_MODULE_VERSION}.tar.gz https://github.com/qeek-dev/nginx-rtmp-module/archive/v${NGINX_RTMP_MODULE_VERSION}.tar.gz && \
+    tar -zxf nginx-rtmp-module-${NGINX_RTMP_MODULE_VERSION}.tar.gz && \
+
+# Nginx echo-nginx-module
+    wget -O echo-nginx-module-${NGINX_ECHO_MODULE_VERSION}.tar.gz https://github.com/openresty/echo-nginx-module/archive/v${NGINX_ECHO_MODULE_VERSION}.tar.gz && \
+    tar -zxf echo-nginx-module-${NGINX_ECHO_MODULE_VERSION}.tar.gz  && \
+
+    cd nginx-${NGINX_VERSION} && \
+    ./configure \
+    --add-module=../nginx-rtmp-module-${NGINX_RTMP_MODULE_VERSION} \
+    --add-module=../echo-nginx-module-${NGINX_ECHO_MODULE_VERSION} \
+    --with-http_ssl_module \
+    --with-http_xslt_module \
+    --with-http_realip_module \ 
+    --with-http_addition_module \ 
+    --with-http_sub_module \
+    --with-http_flv_module \
+    --with-http_mp4_module \
+    --with-http_gunzip_module \
+    --with-http_gzip_static_module \
+    --with-http_random_index_module \
+    --with-http_secure_link_module \
+    --with-http_stub_status_module \
+    --with-http_dav_module \
+    --with-http_auth_request_module \
+    --with-mail \
+    --with-mail_ssl_module \
+    --with-file-aio \
+    --with-threads \
+    --with-stream \
+    --with-stream_ssl_module \
+    --with-debug \
+     --with-ipv6 \
+    && make ${MAKEFLAGS} && make install 
+
+## Clear build source
+RUN rm -rf /tmp/*        
+
+## cleanup
+RUN apt-get purge -y ${buildDeps} && \
+    apt-get autoremove -y && \
+    apt-get clean -y
+
+COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# network configuration
+EXPOSE 1935 80 443
+
+VOLUME ["/usr/local/nginx/conf", "/usr/local/nginx/html"]
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
