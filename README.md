@@ -6,6 +6,7 @@ Docker Hub : [garychen/nginx](https://hub.docker.com/r/garychen/nginx/)
 
 Qeek version use Qeek-dev's nginx-rtmp-module support bitrate information [Qeek-dev's nginx-rtmp-module](https://github.com/qeek-dev/nginx-rtmp-module/tree/qeekdev)
 
+Nginx version [history](http://nginx.org/en/CHANGES)
 ## Build 
 
 ```

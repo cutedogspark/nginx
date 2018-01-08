@@ -1,6 +1,6 @@
 IMAGE = garychen/nginx
 CONTAINER_NAME = nginx
-VERSION = 1.0.0
+VERSION = 1.1.0
 WEB_PORT = 88
 
 all: alpine alpine-qeek alpine-qeek-ffmpeg
